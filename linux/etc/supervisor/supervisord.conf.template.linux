@@ -18,6 +18,8 @@ password=<PASSWORD> ; <--- UPDATE HERE!!     ; sockef file mode (default 0700)
 
 [supervisord]
 logfile=/etc/supervisor/logs/supervisord.log ; (main log file;default $CWD/supervisord.log)
+logfile_maxbytes=10MB
+logfile_backups=2
 pidfile=/etc/supervisor/run/supervisord.pid  ; (supervisord pidfile;default supervisord.pid)
 childlogdir=/etc/supervisor/logs             ; ('AUTO' child log dir, default $TEMP)
 
