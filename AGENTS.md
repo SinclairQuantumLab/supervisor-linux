@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 ## Purpose
 
@@ -23,29 +23,30 @@
 
 ## Context handoff policy
 
-- `AGENT.md` is the durable, tracked source of truth for repo purpose, boundaries, and workflow rules.
+- `AGENTS.md` is the durable, tracked source of truth for repo purpose, boundaries, and workflow rules.
 - `.codex/PROJECT_STATE.md` is the durable, tracked snapshot of current repository state, important cautions, and active phase.
 - `.codex/DECISIONS.md` is the durable, tracked record of locked decisions and non-obvious constraints.
 - `.codex/SESSION.md` is the durable, tracked milestone log for major repository events.
 - `.codex/NEXT-STEPS.md` is the durable, tracked resumption checklist and next-action queue.
 - `.codex/*.local.md` is reserved for machine-specific, worktree-specific, or thread-specific notes that should not be committed.
 - Durable handoff context should live in tracked `.codex/*.md` files; only true local notes should be ignored.
+- Reserve `.agents/skills/` for repository-scoped agent skills if they are added later; do not use `.agents/` as a rename of the handoff directory.
 
 ## Required agent workflow
 
-- At the start of work, read `AGENT.md` first.
+- At the start of work, read `AGENTS.md` first.
 - Then read `.codex/PROJECT_STATE.md`, `.codex/DECISIONS.md`, `.codex/SESSION.md`, and `.codex/NEXT-STEPS.md`.
 - If relevant local notes exist, read `.codex/*.local.md` before making new assumptions.
 - When durable repo state or decisions change, update the tracked `.codex/*.md` files before finishing.
 - When temporary machine/worktree/thread context matters, write it under `.codex/*.local.md`.
-- Keep `AGENT.md` stable. Update it only for durable rules, durable structure changes, or durable project-state milestones.
+- Keep `AGENTS.md` stable. Update it only for durable rules, durable structure changes, or durable project-state milestones.
 
 ## Working rules
 
 - Treat this repository as a usage/support repository for `supervisor`, not as the upstream project.
 - Prefer minimal, explicit edits over broad cleanup.
 - If you need Windows comparison while working on Linux material, use `C:\Users\Joon\Projects\supervisor-windows`.
-- If a future task starts real post-split development, keep the split-history constraints in mind and record the new phase in `AGENT.md`, `.codex/PROJECT_STATE.md`, and `.codex/SESSION.md`.
+- If a future task starts real post-split development, keep the split-history constraints in mind and record the new phase in `AGENTS.md`, `.codex/PROJECT_STATE.md`, and `.codex/SESSION.md`.
 
 ## Current status
 

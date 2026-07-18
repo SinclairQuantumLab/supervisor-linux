@@ -12,3 +12,8 @@
 - Added the trailing `Developer's note` to `README.md` so the Linux README matches the Windows-side split more closely.
 - Changed the `.codex/` policy so durable project context is tracked and only `.local.md` files are ignored.
 - Confirmed that `origin/main` and current history still reflect mirrored `supervisor-setting` lineage through commit `8139700`, so the Linux-only split is currently represented as worktree changes.
+
+## 2026-07-18
+
+- Renamed the root instruction file from `AGENT.md` to the Codex-standard `AGENTS.md` and updated active references.
+- Kept handoff documents under `.codex/`; `.agents/skills/` remains available for repository-scoped skills if needed later.

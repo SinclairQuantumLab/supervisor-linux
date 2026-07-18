@@ -6,6 +6,7 @@
 - Split status: completed on 2026-04-17 from the old mixed `supervisor-setting` layout.
 - Active tracked files center on `README.md`, `linux/`, and `python/`.
 - GitHub remote: `origin = https://github.com/SinclairQuantumLab/supervisor-linux.git`.
+- Repository-level agent instructions use the standard root `AGENTS.md`; handoff documents remain under `.codex/`.
 
 ## Current phase
 
