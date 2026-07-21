@@ -1,231 +1,362 @@
-# supervisor-linux
+# `supervisor` in Linux
+
+This repo contains a `uv` project and templates to run [`supervisor`](https://pypi.org/project/supervisor/) on Linux.
+
 
 ## Table of Contents
 
-1. [Setting up in Linux](#setting-up-in-linux)
-2. [Managing processes](#managing-processes)
+1. [How to use `supervisor`](#how-to-use-supervisor)
+2. [Adding an app to `supervisor`](#adding-an-app-to-supervisor)
+3. [Quick installation with `uv`](#quick-installation-with-uv)
+4. [One-shot setup script](#one-shot-setup-script)
+5. [Manual `systemd` setup](#manual-systemd-setup)
+6. [Uninstalling `supervisor`](#uninstalling-supervisor)
+7. [Remove an old package-manager install](#remove-an-old-package-manager-install)
+8. [Developer's note](#developers-note)
 
-## Setting up in Linux
+## How to use `supervisor`
 
-### 1. Install `supervisor` in a virtual environment
+### Startup `supervisor`
 
-Create the folder where you want to install `supervisor` (recommended: `~/Projects/supervisord/`) and run the below commandline in `bash` terminal:
+The `supervisor` service in `systemd` should run automatically after starting up the computer.
 
-```bash
-$ uv init --python 3.13
-$ uv add "supervisor==4.3.0"
-```
+To start the `supervisor` service manually, run the command below in a Bash terminal to start `supervisord` installed as a service in `systemd`:
 
-> **NOTE**: As of 2026/03/08, `python==3.13` works with `supervisor==4.3.0`.
+   ```bash
+   sudo systemctl start supervisor
+   ```
 
-It already setup a virtual Python environment and installed `supervisor`. How easy!
-Make sure the core executable files for `supervisor` exists:
+### Monitoring & Managing processes
 
-```bash
-# in the folder that supervisor has been installed:
-$ ls ./.venv/bin/
-```
+There are Web UI and CLI to monitor and manage the processes registered in `supervisor`.
+The Web UI requires logging in; use the `username` and `password` set in the `[inet_http_server]` section in the `supervisord.conf` file.
+The CLI connects through a user-only Unix socket and does not require those credentials.
 
-There should be two files:
+#### Web UI
 
-- `supervisorctl`: a command to control `supervisor'`. i.e., a CLI interface of `supervisor`.
-- `supervisord`: main app of `supervisor` to be installed as a `systemd` daemon.
+Open `http://localhost:9001` in a browser to use the Supervisor web UI, and it will show the statuses of the registered processes and let you control them.
 
-`supervisorctl` can be tested running:
+[`multivisor`](https://github.com/SinclairQuantumLab/multivisor-web.git) provides a nice centralized monitoring and control Web dashboard if the `supervisor` is set up for it (see the relevant step in the [Quick installation with uv](#quick-installation-with-uv) section) and registered with a `multivisor` server.
 
-```bash
-$ ./.venv/bin/supervisorctl
-unix:///etc/supervisor/run/supervisor.sock no such file
-supervisor>
-```
+#### CLI
 
-Entering `exit` will let you go back to bash prompt.
-
-### 2. Configure `supervisor`
-
-Download `/linux/etc/supervisor/` in the repo and copy the `supervisor` folder in the `/etc/` folder in the computer in which you want to install `supervisor`.
+In a Bash terminal, run:
 
 ```bash
-$ sudo mkdir /etc/supervisor
-$ sudo cp -r /path/to/repo/linux/etc/supervisor/. /etc/supervisor
-$ sudo mkdir /etc/supervisor
-$ sudo cp -r /path/to/repo/linux/etc/supervisor/. /etc/supervisor
+supervisorctl
 ```
 
-Make sure the `supervisor` folder contains all of the below:
+One can either establish a supervisor control session with a `supervisor>` prompt or directly call the `supervisorctl` commands below without entering the `supervisor` session, as in the example below:
 
-- `conf.d` folder
-- `logs` folder
-- `run` folder
-- `supervisord.conf.template.linux` file
+```bash
+supervisorctl status
+```
 
-Change `supervisord.conf.template.linux` file's name to `supervisord.conf` (i.e., drop the `.template.linux` extension), open the file and update the password at `<PASSWORD>` placeholder (and save it).
+##### `supervisorctl` commands
 
-<!--
-    > **Note:** If they don't exist, create them or supervisor will not work. Below is the stdout of `sudo systemctl status --no-pager supervisor` when supervisor was installed as a systemd service daemon via `sudo apt install supervisor` but failed due to missing folders:
+Check the statuses of registered processes:
 
-    ```text
-    ● supervisor.service - Supervisor process control system for UNIX
-        Loaded: loaded (/usr/lib/systemd/system/supervisor.service; enabled; preset: enabled)
-        Active: activating (auto-restart) (Result: exit-code) since Mon 2025-03-10 15:40:12 MDT; 6s ago
-        Docs: http://supervisord.org
-        Process: 3156719 ExecStart=/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf (code=exited, status=2)
-    Main PID: 3156719 (code=exited, status=2)
-        Tasks: 21 (limit: 38053)
-        Memory: 34.5M (peak: 230.7M)
-            CPU: 112ms
-        CGroup: /system.slice/supervisor.service
-                └─3156573 python ./main.py
+```bash
+supervisor> status
+```
+
+Start, stop, or restart one app:
+
+```bash
+supervisor> start myapp
+supervisor> stop myapp
+supervisor> restart myapp
+```
+
+### Shutdown `supervisor`
+
+   ```bash
+   sudo systemctl stop supervisor
+   ```
+
+## Adding an app to `supervisor`
+
+1. Copy the app config template in `$HOME/Projects/supervisor/conf.d/` folder:
+
+   ```bash
+   cd "$HOME/Projects/supervisor"
+   cp './conf.d/[APPNAME].conf.template' './conf.d/<APPNAME>.conf'
+   ```
+
+   Replace: `<APPNAME>` with the name of the app in `supervisor`.
+
+2. Edit the `.conf` above.
+
+   Replace:
+
+   - `<APPNAME>` with the Supervisor app name
+   - `command=` with the real app startup command
+
+      For a Python app,
+
+      1. Copy `python/Startup.sh` into the app project folder and configure it; especially, update the location of the Python script to run in the `py_path` variable.
+      2. In the `.conf` file, set the following:
+
+         ```ini
+         command=/usr/bin/env bash "%(ENV_HOME)s/Projects/%(program_name)s/Startup.sh"
+         ```
+
+      In `supervisor`, `%(ENV_HOME)s` and `%(program_name)s` refer to `$HOME` and the app's name set in the `.conf` file.
+
+   Add further configuration items found in https://supervisord.org/configuration.html#program-x-section-settings or https://supervisord.org/configuration.html#group-x-section-settings as needed.
+
+3. Update `supervisor` with the new `.conf` file (see the [CLI](#cli) section above):
+
+   ```bash
+   supervisorctl update
+   ```
+
+   Check if the new app appears in the `supervisor` interface; see [Monitoring & Managing processes](#monitoring--managing-processes).
+
+## Quick installation with `uv`
+
+If this computer already has an old `supervisor` installed through a Linux package manager, remove it first. See the [Remove an old package-manager install](#remove-an-old-package-manager-install) section.
+
+1. If `uv` has not been installed, install it by following [the official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+   **Close and reopen Bash after installing `uv`**.
+
+2. Open Bash and clone this repo in the `$HOME/Projects/` folder:
+
+   ```bash
+   mkdir -p "$HOME/Projects"
+   cd "$HOME/Projects"
+   git clone https://github.com/SinclairQuantumLab/supervisor-linux.git supervisor
+   ```
+
+3. Go to the created folder and run `uv sync`:
+
+   ```bash
+   cd supervisor
+   uv sync
+   ```
+
+4. Make `supervisorctl` available from Bash.
+
+   ```bash
+   chmod +x ./supervisorctl.sh
+   mkdir -p "$HOME/.local/bin"
+   ln -sf "$(pwd -P)/supervisorctl.sh" "$HOME/.local/bin/supervisorctl"
+   ```
+
+   The wrapper always loads this project's `supervisord.conf`, so `supervisorctl` can find the Linux Unix socket from any folder. `~/.local/bin` must be in `PATH`. If the shell cannot find `supervisorctl`, add that folder to the user's shell configuration and open a new terminal.
+
+5. Create the `supervisord` config file from the template:
+
+   ```bash
+   cp ./supervisord.conf.template ./supervisord.conf
+   chmod 600 ./supervisord.conf
+   ```
+
+6. Open the `supervisord.conf` file and replace the `<PASSWORD>` placeholder with our usual password.
+
+7. Register `supervisord` as a system-level `systemd` service that runs as the deployment user. Run this command from the deployment user's normal Bash terminal:
+
+   ```bash
+   sudo bash ./mount-supervisord-systemd.sh
+   ```
+
+   This creates a `systemd` service named `supervisor`.
+
+   The helper uses the current repo and `SUDO_USER` to identify the deployment user. Before writing the unit, it checks the Linux virtual environment and requires `supervisord.conf` to be owned by that user without group or other access. It reloads `systemd`, enables the service at boot, and configures it to run `Startup_supervisord.sh` as the deployment user. It starts the service immediately only when `--run-now` is passed.
+
+8. Start the `systemd` service and check that `supervisord` responds:
+
+   ```bash
+   sudo systemctl start supervisor
+   ```
+
+9. Test if `supervisor` runs successfully.
+
+   - In terminal:
+
+     ```bash
+     supervisorctl
+     ```
+
+     `supervisor` is running if the `supervisor>` prompt shows up.
+     Get out of the prompt by entering `exit`.
+
+   - Web UI: go to `http://localhost:9001` in a web browser and `supervisor` is running if it shows the control UI.
+
+   The following commands are useful for checking the service and troubleshooting startup:
+
+   ```bash
+   systemctl status supervisor
+   sudo journalctl -u supervisor.service -n 50
+   sudo journalctl -u supervisor.service -f
+   systemctl cat supervisor
+   ```
+
+10. (Optional) register the installed `supervisor` with `multivisor`.
+
+    ```bash
+    uv run python -c "from multivisor.rpc import make_rpc_interface; print('RPC import OK')"
     ```
--->
 
-### 3. Create a Symlink
+    If using Multivisor, confirm the `[rpcinterface:multivisor]` section in `supervisord.conf` and open the required firewall port for the environment.
 
-Make a symlink for `supervisorctl` in conda to the local `PATH` (so you can run `supervisorctl` globally just by typing it):
+    Replace `<TRUSTED_INTERFACE_IP>` with a loopback or private-interface address reachable by the trusted Multivisor server before uncommenting that section. Allow TCP port 9002 only from that server; do not expose this unauthenticated RPC endpoint to an untrusted network. Restart the service after editing the config:
 
-```bash
-# replace <VENVPATH> below with the path used in the last step
-$ sudo ln -s <VENVPATH>/bin/supervisorctl /usr/local/bin/supervisorctl
-```
+    ```bash
+    sudo systemctl restart supervisor
+    ```
 
-For example, if `supervisor` was installed in `~/Projects/supervisord/`,
-`<VENVPATH>` should be replaced by `/home/<USERNAME>/Projects/supervisord/.venv/`.
+That's it. `supervisord` should now start automatically when this Linux computer boots.
 
-> **NOTE**: command `ln` doesn't work with relative path.
+## One-shot setup script
 
-It allows to call `supervisorctl` by just with the `supervisorctl` command in terminal
+Copy and paste the script below into a Bash terminal opened as the deployment user.
 
 ```bash
-$ sudo supervisorctl
+(
+set -euo pipefail
+
+install_dir="$HOME/Projects/supervisor"
+if [[ -e "$install_dir" ]]; then
+    printf 'Refusing to overwrite existing path: %s\n' "$install_dir" >&2
+    exit 1
+fi
+
+# install supervisor-linux in ~/Projects/supervisor
+mkdir -p "$HOME/Projects"
+cd "$HOME/Projects"
+git clone https://github.com/SinclairQuantumLab/supervisor-linux.git supervisor
+cd supervisor
+uv sync
+# create symbolic link for supervisorctl in user `bin` folder
+chmod +x ./supervisorctl.sh
+mkdir -p "$HOME/.local/bin"
+ln -sf "$(pwd -P)/supervisorctl.sh" "$HOME/.local/bin/supervisorctl"
+# create `supervisord.conf` file from the template
+cp ./supervisord.conf.template ./supervisord.conf
+chmod 600 ./supervisord.conf
+)
 ```
 
-### 4. Install `supervisord` as a `systemd` Service
+**Make sure to replace the `<PASSWORD>` placeholder with our usual password in `$HOME/Projects/supervisor/supervisord.conf`.**
 
-Copy `/linux/etc/systemd/system/supervisor.service.template` file in this repo into the computer's `/linux/etc/systemd/system/` foler and drop `.template` extension.
+Then register and start the service:
 
 ```bash
-$ sudo mkdir -p /etc/systemd/system/
-$ sudo cp -r /path/to/repo/linux/systemd/system/supervisor.service.template /etc/systemd/system/supervisor.service
+# create `supervisor` service in systemd to run supervisord
+sudo bash "$HOME/Projects/supervisor/mount-supervisord-systemd.sh"
+# start `supervisor` service
+sudo systemctl start supervisor
 ```
 
-> **cf.** By default, the `.service` files for system-wide services are placed in `/lib/systemd/system/`, while the custom services in `/etc/systemd/system/` override the system-wide services.
+## Manual `systemd` setup
 
-Open `supervisor.service` file and replace the `<VENVPATH>` placeholders with the path to the hidden `.venv/` folder in the installed `supervisor`'s folder.
+While the Bash script in [Quick installation with uv](#quick-installation-with-uv) provides a quick way to set up the `supervisor` service, manual `systemd` setup is also useful because it shows the Linux settings directly.
+
+1. Open `/etc/systemd/system/supervisor.service` as root and use the following content:
+
+   ```ini
+   [Unit]
+   Description=Supervisor process control system for UNIX
+   Documentation=https://supervisord.org/
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=<LINUX_USERNAME>
+   Environment="HOME=<LINUX_HOME>"
+   WorkingDirectory="<REPO_ROOT>"
+   ExecStart=/bin/bash "<REPO_ROOT>/Startup_supervisord.sh"
+   Restart=on-failure
+   RestartSec=60s
+   KillMode=mixed
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+2. Replace `<LINUX_USERNAME>` with the deployment user's Linux account name, `<LINUX_HOME>` with that account's home directory, and `<REPO_ROOT>` with the absolute checkout path. For the normal layout these paths are `/home/<LINUX_USERNAME>` and `/home/<LINUX_USERNAME>/Projects/supervisor`.
+
+3. Reload `systemd`, enable the service, and start it:
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable supervisor
+   sudo systemctl start supervisor
+   ```
+
+4. Verify the service:
+
+   ```bash
+   systemctl is-active supervisor
+   systemctl is-enabled supervisor
+   ```
+
+Custom system-level unit files belong in `/etc/systemd/system/`. Files there override distribution-provided units with the same service name.
+
+## Uninstalling `supervisor`
+
+You may need to open a Bash terminal with `sudo` access for some of the steps below.
+
+1. [Shut down the running `supervisor` instance](#shutdown-supervisor), if any.
+
+2. Delete the `supervisor` service created in `systemd` by running:
+
+   ```bash
+   sudo systemctl disable supervisor
+   sudo rm -f /etc/systemd/system/supervisor.service
+   sudo systemctl daemon-reload
+   sudo systemctl reset-failed supervisor
+   ```
+
+3. Remove the `supervisor` project folder:
+
+   This also removes its runtime config and logs, so save anything needed first.
+
+   ```bash
+   rm -r "$HOME/Projects/supervisor"
+   ```
+
+4. Remove the symlink to `supervisorctl` in the user bin folder:
+
+   ```bash
+   rm -f "$HOME/.local/bin/supervisorctl"
+   ```
+
+This does not remove the app projects that were managed by `supervisor`.
+
+## Remove an old package-manager install
+
+Use this only if the computer already has `supervisor` installed through a Linux distribution package manager.
+
+Open a Bash terminal with `sudo` access for this section.
+
+An existing package installation can use the same service name, port, or runtime paths as this repo.
+
+On Debian or Ubuntu, check whether the package is installed:
 
 ```bash
-$ sudo nano /etc/systemd/system/supervisor.service
-$ sudo nano /etc/systemd/system/supervisor.service
+apt list --installed supervisor 2>/dev/null
 ```
 
-Now, let's install the `supervisor.service` to be a `systemd` daemon.
+If it is installed, stop its service and remove the package before following the quick installation:
 
 ```bash
-$ sudo systemctl daemon-reload # scan and register supervisor.service
-$ sudo systemctl start supervisor.service # start the daemon process
-$ sudo systemctl enable supervisor # enable autostart on boot
+sudo systemctl disable --now supervisor
+sudo apt remove supervisor
 ```
 
-Check if the daemon is running and `enabled`.
-
-```bash
-$ systemctl is-active supervisor
-active
-$ systemctl is-enabled supervisor
-enabled
-```
-
-The below command lines would be helpful to see the status and debug issues.
-
-```bash
-$ systemctl status supervisor
-$ journalctl -u supervisor.service
-$ journalctl -u supervisor.service -n <# logs to show>
-$ journalctl -u supervisor.service -f # real-time streaming
-$ systemctl cat supervisor # printing supervisor.service script
-```
-
-Also, go to `http://localhost:9001` in a web browser and see if the web control page shows up. Type username and password set under `[inet_http_server]` in `/etc/supervisor/supervisord.conf` file.
-
-### 5. Setup Group Permissions
-
-Change group to `users` and give read, write & file create group permissions to `/etc/supervisor/` and its subfiles/folders. This allows users to edit them without `sudo` (e.g., through SSH or vscode tunnel).
-
-```bash
-$ sudo chown -R :users /etc/supervisor
-$ sudo chmod -R g+rwx /etc/supervisor
-```
-
-Verify the change:
-
-```bash
-$ ls -l /etc | grep supervisor
-drwxrwxr--  <number>  root  users   ...<some text>...   supervisor
-```
-
-### 6. Multivisor Integration (Optional)
-
-Install `multivisor[rpc]` package in the `supervisor`'s folder installed above.
-
-```bash
-$ uv add "multivisor[rpc]==6.0.3"
-```
-
-> **NOTE**: As of 2026/03/08, `python==3.13` (unofficially) works with `multivisor[rpc]-6.0.3`.
-
-Test if `multivisor[rpc]` has been installed and can be properly called.
-
-```bash
-$ uv run python -c "from multivisor.rpc import make_rpc_interface; print('RPC import OK')"
-RPC import OK
-```
-
-Then uncomment the below lines in `/etc/supervisor/supervisord.conf` to connect the supervisor to multivisor:
-
-```ini
-[rpcinterface:multivisor]
-supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
-bind=\*:9002
-```
-
-Restart `supervisor` daemon to load the new configuration.
-
-```bash
-$ sudo systemctl restart supervisor
-```
-
-### 7. Adding apps in `supervisor`
-
-1. In the repo folder, use `/linux/etc/supervisor/conf.d/[APPNAME].conf.template.linux` to create `<APPNAME>.conf` files in the folder of an app you want to manage by `supervisor`.
-2. Edit the `<APPNAME>.conf` accordingly.
-3. Copy it to `/etc/supervisor/conf.d/` folder. Keep the original copy in the app folder for bookkeeping and sharing purpose.
-
----
-
-## Managing processes
-
-### Configuring `<APPNAME>.conf` files further
-
-The `.conf` file for each program introduced above is just simple examples. More advanced features like restrat policy when apps fail or dependencies between apps can be setup in the configuration file. Find the full detail in the [official documentation](https://supervisord.org/configuration.html) with a particular focus on `[program:x]` and `[group:x]` Section Settings.
-
-### Running python scripts with `supervisor`
-
-#### Helper package
-
-`/python/supervisor/` contains package that may be necessary or useful to run python apps with `supervisor`. Copy the `supervisor/` folder into the project's folder and import, for instance, `supervisor_helper.py` module as below:
-
-```python
-from supervisor.supervisor_helper import *
-```
-
-For instance, `log()`, `log_error()`, and , `log_warn()` in `supervisor_helper.py` will be important in particular as `supervisor` display and log the `stdout` for normal output and `stderr` for errors separately.
-
-#### Launching script
-
-It will be convenient to use the Lauching script `Startup_bash` in `/python/` folder here. Then call or execute the launching script in the `command=` section in `<APPNAME>.conf` files.
-
-The default script file that the lauching scripts run is `main.py`. Update the script name assigned to `py_path` variable in `Startup_bash` to run other script.
-
+For another Linux distribution, use its package manager to remove the equivalent `supervisor` package. Back up any app configs that are still needed before removing `/etc/supervisor/`; this repo uses `~/Projects/supervisor/` instead.
 
 ## Developer's note
 
-- This repository was split from [supervisor-setting](https://github.com/SinclairQuantumLab/supervisor-setting.git) at commit d1f44233a3bccc7364d7ea797976f2e0ddf3d9c7.
+- This repository was split from [supervisor-setting](https://github.com/SinclairQuantumLab/supervisor-setting.git) GitHub repo at commit d1f44233a3bccc7364d7ea797976f2e0ddf3d9c7.
+
+- The high-level flow of launching `supervisor` and registered apps:
+
+   > systemd -> Startup_supervisord.sh -> supervisord -> apps in conf.d/*.conf
+
+- Why use a system-level `systemd` service to run `supervisord`?
+
+   A system-level `systemd` service starts `supervisord` at boot while running it as the deployment user.
+   `Startup_supervisord.sh` uses `-n` to keep `supervisord` in the foreground so `systemd` can track and restart the process correctly.
