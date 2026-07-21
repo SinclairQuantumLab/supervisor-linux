@@ -1,0 +1,10 @@
+[project]
+name = "imaq-supervisor-linux"
+version = "0.1.0"
+description = "Supervisor process management setup for Linux"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "multivisor[rpc]==6.0.3",
+    "supervisor==4.3.0",
+]
