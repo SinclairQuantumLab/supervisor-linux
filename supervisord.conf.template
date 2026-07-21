@@ -1,0 +1,54 @@
+; supervisor config file.
+; Refer to https://supervisord.org/configuration.html for detail
+
+[unix_http_server]                  ; local supervisorctl connection on Linux
+file=%(here)s/supervisor.sock       ; socket path relative to this config
+chmod=0700                          ; restrict access to the socket owner
+
+[inet_http_server]                  ; loopback-only TCP server for Web UI
+port=127.0.0.1:9001                 ; ip_address:port specifier, *:port for all interfaces
+username=admin                      ; default is no username (open server)
+password=<PASSWORD>                 ; <--- UPDATE HERE!!; default is no password (open server)
+
+[supervisord]
+logfile=%(here)s/logs/supervisord.log ; (main log file;default $CWD/supervisord.log)
+logfile_maxbytes=10MB               ; (max main logfile bytes before rotation;default 50MB)
+logfile_backups=2                   ; (number of main logfile rotation backups;default 10)
+loglevel=info                       ; (log level;default info; others: debug,warn,trace)
+pidfile=%(here)s/supervisord.pid    ; (supervisord pidfile;default supervisord.pid)
+childlogdir=%(here)s/logs           ; ('AUTO' child log dir, default $TEMP)
+;nodaemon=true                      ; (start in foreground if true;default false)
+
+; environment variables to be delivered to processes
+environment=PYTHONUNBUFFERED=1
+directory=%(here)s
+; PYTHONUNBUFFERED=1: let stdout be logged in real time for Python apps
+; directory: set supervisord's working directory to the folder containing this config
+
+; The rpcinterface:supervisor section must remain in the config file for
+; RPC (supervisorctl/web interface) to work. Additional interfaces may be
+; added by defining them in separate [rpcinterface:x] sections.
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+; supervisorctl uses the Unix socket above, so access is controlled by its
+; Linux file permissions instead of the Web UI username and password.
+
+[supervisorctl]
+serverurl=unix://%(here)s/supervisor.sock
+history_file=%(here)s/.sc_history
+
+; To interface this supervisor with multivisor
+; https://github.com/tiagocoutinho/multivisor
+; [rpcinterface:multivisor]
+; supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
+; bind=<TRUSTED_INTERFACE_IP>:9002
+
+; The [include] section can contain the files setting. This setting can list
+; multiple files separated by whitespace or newlines and can use wildcards.
+; Filenames are interpreted relative to this file. Included files cannot
+; include other files themselves.
+
+[include]
+files = %(here)s/conf.d/*.conf
