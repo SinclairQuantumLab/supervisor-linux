@@ -3,6 +3,9 @@
 # configuration files
 *.conf
 
+# systemd service files
+supervisor.service
+
 # log files
 logs/*
 conf.d/logs/*

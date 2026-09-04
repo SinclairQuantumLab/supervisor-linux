@@ -1,0 +1,16 @@
+[Unit]
+Description=Supervisor process control system for UNIX
+Documentation=https://supervisord.org/
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=<SUPERVISOR_DIR>/.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf
+ExecStop=<SUPERVISOR_DIR>/.venv/bin/supervisorctl -c <SUPERVISOR_DIR>/supervisord.conf $OPTIONS shutdown
+ExecReload=<SUPERVISOR_DIR>/.venv/bin/supervisorctl -c <SUPERVISOR_DIR>/supervisord.conf $OPTIONS reload
+KillMode=mixed
+Restart=on-failure
+RestartSec=50s
+
+[Install]
+WantedBy=default-user.target
