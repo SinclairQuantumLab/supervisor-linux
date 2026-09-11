@@ -1,0 +1,8 @@
+# configuration files
+*.conf
+
+# log files
+logs/*
+conf.d/logs/*
+*.log
+*.bak
