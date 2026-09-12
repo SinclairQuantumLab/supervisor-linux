@@ -12,7 +12,7 @@
 - `supervisor-linux` is the active repository for Linux-only materials.
 - The GitHub repository is `https://github.com/SinclairQuantumLab/supervisor-linux`.
 - The GitHub repository name is `supervisor-linux`, but the intended local deployment folder is `~/Projects/supervisor`.
-- The repository root is the canonical deployment model. The older `linux/` tree remains only as inherited reference material.
+- The repository root is the canonical deployment model. Superseded setup files belong in Git history, not parallel reference trees or duplicate guides.
 - The sibling checkout at `C:\Users\Joon\Projects\supervisor` is the Windows implementation used for parity comparison and paired cross-repository edits. Work in that repository directly instead of keeping an embedded copy here.
 - Common configuration, usage concepts, code comments, and document style should mirror the Windows implementation as closely as practical. Keep only genuinely OS-specific behavior Linux-native.
 - Until the user explicitly asks otherwise, preserve inherited content as much as possible.
@@ -27,11 +27,9 @@
 - `conf.d/[APPNAME].conf.template`: canonical per-app configuration template.
 - `logs/.gitignore` and `conf.d/logs/.gitignore`: tracked placeholders for runtime log directories.
 - `supervisor.service.template`: primary user-systemd unit template; the README copies it to root `supervisor.service` and links it into `~/.config/systemd/user/`.
-- `Startup_supervisord.sh` and `mount-supervisord-systemd.sh`: retained older system-service helpers, not used by the current README installation flows.
 - `python/Startup.sh`: Linux launcher helper copied into supervised Python projects.
 - `python/supervisor/supervisor_helper.py`: shared Python logging helper.
 - `tests/supervisor-test-child.py`: portable Python/tkinter GUI and stdout/stderr probe, kept byte-identical to the Windows sibling. Its opt-in `tests/supervisor-test-child.conf` uses Linux paths and the repository's `.venv/bin/python`; keep `autostart=false` and `autorestart=false`.
-- `linux/`: inherited pre-parity `/etc`-style templates retained for reference, not the canonical installation path.
 
 ## Context handoff policy
 
@@ -57,7 +55,7 @@
 
 - Treat this repository as a usage/support repository for `supervisor`, not as the upstream project.
 - Prefer minimal, explicit edits over broad cleanup.
-- Treat the root `uv` project and root configuration templates as canonical. Do not redirect normal users to the legacy `linux/` tree.
+- Treat the root `uv` project and root configuration templates as canonical. Do not restore obsolete setup helpers or the removed legacy template tree as alternate installation paths.
 - For Windows parity work, inspect or edit `C:\Users\Joon\Projects\supervisor` directly as the task requires. Keep its Git status, commits, and staging separate from this Linux repository.
 - `README.md` is for hands-on introduction, setup instructions, usage guidance, and other content that helps a normal user apply this repository immediately.
 - Do not use `README.md` for issue history, debugging history, or reassurance aimed at maintainers. If a rare developer-facing note truly belongs, keep it in a `Developer's note` section at the bottom.
@@ -69,8 +67,8 @@
 - The current primary Linux setup uses a user systemd service named `supervisor`, controlled by `systemctl --user`. Its root `supervisor.service.template` directly launches `.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf`; supervisord then loads apps from `conf.d/*.conf`.
 - Keep `supervisord` in foreground mode under systemd so systemd owns its lifecycle and observes failures correctly.
 - The current primary setup symlinks `.venv/bin/supervisorctl` into `~/.local/bin`; `supervisorctl.sh` was removed in `2a0183b`. Config discovery outside the repository remains a separate review item. Keep new CLI walkthroughs in the repository folder and do not redesign global CLI usage as part of unrelated mirroring work.
-- `mount-supervisord-systemd.sh` should only handle systemd unit registration, enablement, and an explicitly requested immediate start. Keep dependency installation, config creation, password editing, and other setup actions as explicit README steps unless the user asks for a one-shot helper.
-- Keep the current user-service setup commands explicit in the README. Quick, one-shot, and manual setup must use the same root `supervisor.service.template`, user-unit location, and `systemctl --user` commands; do not call the retained system-level helper from those flows.
+- Keep dependency installation, config creation, password editing, and other setup actions as explicit README steps; the optional one-shot flow must use the same commands.
+- Keep the current user-service setup commands explicit in the README. Quick, one-shot, and manual setup must use the same root `supervisor.service.template`, user-unit location, and `systemctl --user` commands, without a separate registration helper.
 - Also document the manual systemd setup path because service-manager behavior and distribution conventions may vary. Keep its displayed unit identical to the root template.
 - Keep shell helpers transparent and procedural. For one-off setup steps, prefer visible variables and step-by-step flow over abstraction unless reuse or safety materially benefits from it.
 - Preserve `logs/.gitignore` and `conf.d/logs/.gitignore` so required log directories exist after clone while runtime logs remain untracked.
@@ -84,8 +82,8 @@
 - The Linux-only split is complete and recorded in commit `ce1631d`.
 - The root instruction file was renamed to the standard `AGENTS.md` in commit `f24a4d3`.
 - Post-split parity development has started, using the Windows implementation as the common-behavior and writing-style baseline.
-- The primary setup on `main` uses the root `uv` project and configs, a user-only Unix socket, a direct CLI executable symlink, and the explicitly registered user systemd service introduced in `2a0183b`. The README's quick, one-shot, manual, usage, and uninstall flows now consistently target that user service; older system-service helpers remain only as retained alternatives.
-- The inherited `linux/` tree remains tracked only as legacy reference material.
+- The primary setup on `main` uses the root `uv` project and configs, a user-only Unix socket, a direct CLI executable symlink, and the explicitly registered user systemd service introduced in `2a0183b`. The README's quick, one-shot, manual, usage, and uninstall flows consistently target that user service.
+- Obsolete system-service helpers, the inherited `linux/` tree, and `REAME.old.md` were removed in the paired Windows/Linux cleanup. Current setup and templates live at the repository root; `python/Startup.sh` remains the active app launcher.
 - Windows parity work now uses the sibling repository at `C:\Users\Joon\Projects\supervisor` directly; no Windows checkout is embedded under `.agents/`.
 - Durable handoff context now lives in tracked files under `.agents/`; only `.local.md` notes are ignored.
 - Static configuration, lock, shell, and repository checks passed on the Windows development host on 2026-07-18. A real Linux systemd end-to-end test remains the next verification milestone.

@@ -9,8 +9,8 @@
 - Primary implementation: the root `uv` project, root configuration templates, `supervisor.service.template`, `python/` app helpers, and the opt-in child test under `tests/`.
 - Primary runtime flow: user `supervisor.service` -> `.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf` -> `conf.d/*.conf`, as introduced in `2a0183b`.
 - Primary CLI setup: `~/.local/bin/supervisorctl` -> symlinked `.venv/bin/supervisorctl`. Config discovery outside the repository is not yet resolved; the README explicitly runs the CLI from the repo root.
-- All README installation paths copy the root unit to ignored `supervisor.service`, link it into `~/.config/systemd/user/`, and enable it under `default.target`. Older system-service helpers remain tracked but are not called by these paths.
-- The inherited `linux/` tree remains tracked as legacy reference material and is not the normal installation source.
+- All README installation paths copy the root unit to ignored `supervisor.service`, link it into `~/.config/systemd/user/`, and enable it under `default.target`. No separate registration or daemon-launch helper is needed.
+- The obsolete system-service helpers, inherited `linux/` reference tree, and duplicate `REAME.old.md` have been removed, matching Windows cleanup `242e267`; previous versions remain recoverable from Git history.
 - Repository-level agent instructions use the standard root `AGENTS.md`; handoff documents live under `.agents/`.
 - Windows parity comparison and paired edits use the sibling checkout at `C:\Users\Joon\Projects\supervisor` directly; no Windows checkout is embedded in this repository.
 
@@ -27,7 +27,7 @@
 
 ## Known cautions
 
-- Do not use or rewrite the legacy `linux/` files as if they were the canonical root model.
+- Do not restore the removed legacy setup files as alternate installation paths. Preserve the current root configs, user-service template, app helpers, tests, and old-package removal instructions.
 - Keep Git status, staging, commits, and destructive operations separate between this repository and `C:\Users\Joon\Projects\supervisor`.
 - A materialized `supervisord.conf` contains credentials and must remain untracked.
 - The installation inconsistencies identified during the `f5d8ff4` review have been corrected: password substitution targets `supervisord.conf`, the unit uses `default.target`, and normal README flows use the user service and repository paths. The manual setup's missing copy command is filled in. Keep `sudo systemctl` and `/etc/supervisor` references limited to old package-manager removal; do not reintroduce the deleted CLI wrapper or the system-level setup helper into current instructions.
