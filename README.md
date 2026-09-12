@@ -10,9 +10,10 @@ This repo contains a `uv` project and templates to run [`supervisor`](https://py
 3. [Quick installation with `uv`](#quick-installation-with-uv)
 4. [One-shot setup script](#one-shot-setup-script)
 5. [Manual `systemd` setup](#manual-systemd-setup)
-6. [Uninstalling `supervisor`](#uninstalling-supervisor)
-7. [Remove an old package-manager install](#remove-an-old-package-manager-install)
-8. [Developer's note](#developers-note)
+6. [Testing with the included child app](#testing-with-the-included-child-app)
+7. [Uninstalling `supervisor`](#uninstalling-supervisor)
+8. [Remove an old package-manager install](#remove-an-old-package-manager-install)
+9. [Developer's note](#developers-note)
 
 ## How to use `supervisor`
 
@@ -103,15 +104,27 @@ supervisor> restart myapp
 
       In `supervisor`, `%(ENV_HOME)s` and `%(program_name)s` refer to `$HOME` and the app's name set in the `.conf` file.
 
+      In an included app config, `%(here)s` refers to that config file's own directory. The template therefore writes app logs under `$HOME/Projects/supervisor/conf.d/logs/`.
+
    Add further configuration items found in https://supervisord.org/configuration.html#program-x-section-settings or https://supervisord.org/configuration.html#group-x-section-settings as needed.
 
-3. Update `supervisor` with the new `.conf` file (see the [CLI](#cli) section above):
+3. Connect through the [CLI](#cli), then run `update` to apply the new `.conf` file. The example below uses `myapp` as the app name:
 
-   ```bash
-   supervisorctl update
+   ```text
+   supervisor> update
+   myapp: added process group
+   ```
+
+   If the config has `autostart=false`, run `start` to launch the app:
+
+   ```text
+   supervisor> start myapp
+   myapp: started
    ```
 
    Check if the new app appears in the `supervisor` interface; see [Monitoring & Managing processes](#monitoring--managing-processes).
+
+To remove an app from Supervisor, delete its `.conf` from `conf.d` and run `update` again. This stops the app and removes its registration.
 
 ## Quick installation with `uv`
 
@@ -394,6 +407,25 @@ While the Bash script in [Quick installation with uv](#quick-installation-with-u
    ```
 
 Custom system-level unit files belong in `/etc/systemd/system/`. Files there override distribution-provided units with the same service name.
+
+## Testing with the included child app
+
+The included [Python test app](tests/supervisor-test-child.py) opens a GUI and writes separate `stdout` and `stderr` messages once per second.
+
+![Expected GUI from the included Supervisor test app](tests/supervisor-test-child.png)
+
+Run this test from the logged-in Linux desktop, using the same account as the `supervisor` user service. The repository's Python needs [Tk support](https://docs.python.org/3/library/tkinter.html), and the service needs access to that desktop's display. Window decorations may differ from the example above.
+
+Copy the provided config into `conf.d`:
+
+```bash
+cd "$HOME/Projects/supervisor"
+cp "./tests/supervisor-test-child.conf" "./conf.d/supervisor-test-child.conf"
+```
+
+Continue from step 3 of [Adding an app to `supervisor`](#adding-an-app-to-supervisor), using `supervisor-test-child` as the app name. This config has `autostart=false`, so use `start` after `update`.
+
+The GUI shown above should appear without a terminal window. Check `supervisor-test-child_out.log` and `supervisor-test-child_err.log` in `conf.d/logs` for the messages.
 
 ## Uninstalling `supervisor`
 

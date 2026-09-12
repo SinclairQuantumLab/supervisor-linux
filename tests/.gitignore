@@ -1,0 +1,2 @@
+# Keep test configs tracked.
+!*.conf

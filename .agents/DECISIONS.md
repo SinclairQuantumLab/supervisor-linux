@@ -8,11 +8,11 @@
 - The canonical installation source is the repository root. The inherited `linux/` tree is retained only as legacy reference material.
 - The intended deployment checkout is `~/Projects/supervisor`.
 - The root project is managed with `uv`; virtual environments are recreated locally and never copied from another checkout.
-- The preferred runtime is a system-level systemd service named `supervisor` running as the configured non-root user.
-- systemd launches `Startup_supervisord.sh`, which keeps supervisord in foreground mode with `.venv/bin/supervisord -n -c ./supervisord.conf`.
+- The primary runtime since `2a0183b` is a user systemd service named `supervisor`, registered from root `supervisor.service.template` and controlled with `systemctl --user`.
+- The primary unit directly launches `.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf`. The materialized main config remains in the repository.
 - `mount-supervisord-systemd.sh` generates, registers, and enables `/etc/systemd/system/supervisor.service`, and starts it only when `--run-now` is explicitly passed. It does not install dependencies, create `supervisord.conf`, or edit credentials.
 - The README must retain an explicit manual systemd setup path in addition to the registration helper.
-- The preferred global CLI is `~/.local/bin/supervisorctl`, symlinked to the root project's `supervisorctl.sh`. The wrapper resolves the real repository path and passes the canonical root config to `.venv/bin/supervisorctl`, so plain CLI commands use the correct endpoint from any current directory.
+- The primary guide now symlinks `.venv/bin/supervisorctl` directly; the wrapper was removed in `2a0183b`. Keep long-term CLI/config-discovery choices separate from the child-test port and do not promise arbitrary-working-directory discovery.
 - Linux `supervisorctl` connects through a `0700` Unix socket at `%(here)s/supervisor.sock` without application-level credentials. The loopback `[inet_http_server]` remains separately authenticated for the Web UI.
 - Root main and app configs use relative paths and keep the Windows-side log rotation and restart policy unless Linux requires a documented difference.
 - The systemd unit uses `KillMode=mixed` so supervisord receives the normal termination signal and can stop its children before systemd cleans up any processes left at timeout.
@@ -21,6 +21,8 @@
 - Materialized configs, credentials, logs, PID/socket files, history, virtual environments, and caches are runtime state and remain untracked.
 - Use `C:\Users\Joon\Projects\supervisor` directly for Windows parity comparison and paired cross-repository edits. Do not keep a Windows checkout under this repository's `.agents/` directory.
 - `python/supervisor/supervisor_helper.py` should stay byte-identical to the Windows copy unless an OS-specific change is explicitly justified.
+- `tests/supervisor-test-child.py` stays byte-identical to the Windows copy. Its Linux config uses `.venv/bin/python` and the existing `ENV_HOME` convention, with `autostart=false`, `startretries=0`, and `autorestart=false`, matching Windows's opt-in test policy.
+- Preserve numbered installation items and minimal OS adaptations. Shared README improvements and unrelated installation corrections require their own task rather than being folded into a test-app mirror.
 - Development context should be durable and repo-portable by default: tracked context goes in `.agents/*.md`, while true local-only notes go in `.agents/*.local.md`.
 - Repository instructions use the Codex-standard root filename `AGENTS.md` so they are discovered automatically.
 - Keep handoff documents under `.agents/`; `.agents/skills/` remains reserved for repository-scoped skills.

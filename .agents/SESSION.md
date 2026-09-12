@@ -39,3 +39,13 @@
 - Standardized the shared `.gitignore` blocks across the Linux and Windows repositories, including `.sc_history`, `.venv/`, and `.uv-cache/`; kept the Unix socket ignore Linux-specific.
 - Removed the embedded `.agents/supervisor-windows/` checkout and its repository-level ignore rule.
 - Switched future Windows parity comparison and paired edits to the sibling checkout at `C:\Users\Joon\Projects\supervisor`.
+
+## 2026-09-12
+
+- Compared clean Linux `main` at `931f993` with the Windows sibling at `9c91d5c` plus its current uncommitted Python/tkinter test and README changes. The working-tree Python probe, not the older committed PowerShell probe, is the source for this port.
+- Added identical Python test source and example screenshot, a Linux Supervisor test config, and the matching six-step README walkthrough. Preserved all existing installation sections and runtime/dependency defaults.
+- Retained the Windows opt-in test settings and separate stdout/stderr logs. Linux uses `.venv/bin/python`, `ENV_HOME`, forward-slash paths, its Unix-socket CLI, and a short Tk/desktop prerequisite note.
+- Reconciled agent descriptions with the already-committed user-service setup and removed CLI wrapper; unrelated README/service issues remain separate work.
+- Verified source/image parity, config option parity, Supervisor 4.3 config parsing, and actual Tk GUI updates, per-second stdout/stderr, and clean close on Windows. Linux desktop/user-service execution remains untested on this host.
+- Mirrored the later Windows README at `3ae01c7`: added shared app-log location, update/start examples, and removal instructions to `Adding an app`; shortened the test section to copy its config and refer to the common steps. Kept Linux paths, unauthenticated Unix-socket CLI wording, and the existing Tk/desktop prerequisite note. No installation or runtime changes were made.
+- Pre-commit review also mirrored Windows's narrowed `tests/.gitignore` exception (`!*.conf`), keeping generated logs and Python caches ignored. Rechecked source/image/helper byte parity, test-config and README parity with OS substitutions, Python/Bash syntax, the uv lock, and ignore rules. Recorded the pre-existing installation inconsistencies separately from this commit.
