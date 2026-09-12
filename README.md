@@ -19,12 +19,12 @@ This repo contains a `uv` project and templates to run [`supervisor`](https://py
 
 ### Startup `supervisor`
 
-The `supervisor` service in `systemd` should run automatically after starting up the computer.
+The `supervisor` user service in `systemd` should run automatically after starting up the computer and logging into the Linux account.
 
 To start the `supervisor` service manually, run the command below in a Bash terminal to start `supervisord` installed as a service in `systemd`:
 
    ```bash
-   sudo systemctl start supervisor
+   systemctl --user start supervisor
    ```
 
 ### Monitoring & Managing processes
@@ -41,9 +41,10 @@ Open `http://localhost:9001` in a browser to use the Supervisor web UI, and it w
 
 #### CLI
 
-In a Bash terminal, run:
+In a Bash terminal, run from the repository folder so `supervisorctl` finds its `supervisord.conf`:
 
 ```bash
+cd "$HOME/Projects/supervisor"
 supervisorctl
 ```
 
@@ -72,7 +73,7 @@ supervisor> restart myapp
 ### Shutdown `supervisor`
 
    ```bash
-   sudo systemctl stop supervisor
+   systemctl --user stop supervisor
    ```
 
 ## Adding an app to `supervisor`
@@ -166,12 +167,7 @@ If this computer already has an old `supervisor` installed through a Linux packa
    uv run supervisorctl
    ```
 
-   and seeing if it gets launches `supervisor>` prompt with the outputs below:
-
-   ```bash
-   unix:///etc/supervisor/run/supervisor.sock no such file
-   supervisor>
-   ```
+   The `supervisor>` prompt should appear. A connection error is expected before the service is started.
 
    Entering `exit` to the prompt will let you go back to bash prompt.
 
@@ -186,10 +182,12 @@ If this computer already has an old `supervisor` installed through a Linux packa
    Open the `supervisord.conf` file and replace the `<PASSWORD>` placeholder with our usual password, manually or by running the commandline below after replacing `<PASSWORD_INPUT>` with the password to use.
 
    ```bash
-   sed -i 's/<PASSWORD>/<PASSWORD_INPUT>/g' ./supervisor.service
+   sed -i 's/<PASSWORD>/<PASSWORD_INPUT>/g' ./supervisord.conf
    ```
 
    Make sure to replace `<PASSWORD_INPUT>` INCLUDING the angled parantheses "<>"
+
+   If the password contains `'`, `/`, `&`, or `\`, edit the file directly.
 
 6. Create the `systemd` service config file from the template:
 
@@ -206,7 +204,7 @@ If this computer already has an old `supervisor` installed through a Linux packa
    Then, create the symlink for the file to the location for local `systemd` service files:
 
    ```bash
-   mkdir -p $HOME/.config/systemd/user/
+   mkdir -p "$HOME/.config/systemd/user/"
    ln -sf "$SUPERVISOR_DIR/supervisor.service" "$HOME/.config/systemd/user/supervisor.service"
    ```
 
@@ -269,10 +267,11 @@ If this computer already has an old `supervisor` installed through a Linux packa
    - Terminal CLI: 
 
       ```bash
+      cd "$HOME/Projects/supervisor"
       supervisorctl
       ```
 
-      The output should not have `unix:///etc/supervisor/run/supervisor.sock no such file` as before if it automatically recognize the `supervisord.conf`.
+      The `supervisor>` prompt should now appear without the connection error from step 4.
 
 
       The following commands are useful for checking the service and troubleshooting startup:
@@ -280,7 +279,7 @@ If this computer already has an old `supervisor` installed through a Linux packa
       ```bash
       systemctl --user status supervisor # showing status in a `less` session
       systemctl --user status supervisor --no-pager # printing the status to terminal output (`stdout`) and return to prompt promptly
-      journalctl --user -u supervisor.service -n <# logs to show> # showing recent logs
+      journalctl --user -u supervisor.service -n 50 # showing recent logs
       journalctl --user -u supervisor.service -f # showing logs in real time
       systemctl --user cat supervisor # showing the `supervisor.service` file's contents
       ```
@@ -295,21 +294,23 @@ If this computer already has an old `supervisor` installed through a Linux packa
 
       The output should show `RPC import OK` with no error.
 
-      Then uncomment the below lines in `/etc/supervisor/supervisord.conf` to connect the supervisor to multivisor:
+      Then uncomment the below lines in `$HOME/Projects/supervisor/supervisord.conf` to connect the supervisor to multivisor:
 
       ```ini
       [rpcinterface:multivisor]
       supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
-      bind=\*:9002
+      bind=<TRUSTED_INTERFACE_IP>:9002
       ```
+
+      Replace `<TRUSTED_INTERFACE_IP>` with `127.0.0.1` for a Multivisor server on this computer, or a private IP reachable only from the trusted Multivisor server. This RPC endpoint has no authentication; do not expose it to an untrusted network.
 
       Restart `supervisor` daemon to load the new configuration.
 
       ```bash
-      $ sudo systemctl restart supervisor
+      systemctl --user restart supervisor
       ```
 
-That's it. `supervisord` should now start automatically when this Linux computer boots.
+That's it. `supervisord` should now start automatically when this Linux computer boots and you log in.
 
 ## One-shot setup script
 
@@ -332,9 +333,8 @@ git clone https://github.com/SinclairQuantumLab/supervisor-linux.git supervisor
 cd supervisor
 uv sync
 # create symbolic link for supervisorctl in user `bin` folder
-chmod +x ./supervisorctl.sh
 mkdir -p "$HOME/.local/bin"
-ln -sf "$(pwd -P)/supervisorctl.sh" "$HOME/.local/bin/supervisorctl"
+ln -sf "$(pwd -P)/.venv/bin/supervisorctl" "$HOME/.local/bin/supervisorctl"
 # create `supervisord.conf` file from the template
 cp ./supervisord.conf.template ./supervisord.conf
 chmod 600 ./supervisord.conf
@@ -346,20 +346,34 @@ chmod 600 ./supervisord.conf
 Then register and start the service:
 
 ```bash
-# create `supervisor` service in systemd to run supervisord
-sudo bash "$HOME/Projects/supervisor/mount-supervisord-systemd.sh"
+(
+set -euo pipefail
+cd "$HOME/Projects/supervisor"
+SUPERVISOR_DIR="$PWD"
+# create `supervisor.service` file from the template
+cp ./supervisor.service.template ./supervisor.service
+sed -i "s|<SUPERVISOR_DIR>|$SUPERVISOR_DIR|g" ./supervisor.service
+# register and enable the user service
+mkdir -p "$HOME/.config/systemd/user/"
+ln -sf "$SUPERVISOR_DIR/supervisor.service" "$HOME/.config/systemd/user/supervisor.service"
+systemctl --user daemon-reload
+systemctl --user enable supervisor
 # start `supervisor` service
-sudo systemctl start supervisor
+systemctl --user start supervisor
+)
 ```
+
+See steps 9–10 of [Quick installation with `uv`](#quick-installation-with-uv) for the Web UI/CLI checks and optional Multivisor setup.
 
 ## Manual `systemd` setup
 
-While the Bash script in [Quick installation with uv](#quick-installation-with-uv) provides a quick way to set up the `supervisor` service, manual `systemd` setup is also useful because it shows the Linux settings directly.
+While the Bash script in [One-shot setup script](#one-shot-setup-script) provides a quick way to set up the `supervisor` service, manual `systemd` setup is also useful because it shows the Linux settings directly. Complete steps 1–5 of [Quick installation with `uv`](#quick-installation-with-uv) first, then use the steps below in place of steps 6–8.
 
 1. Copy the `supervisor.service.template` file in this repo in the same top folder without `.template` extension, manually or by running the below commandline in terminal:
 
    ```bash
-   
+   cd "$HOME/Projects/supervisor"
+   cp ./supervisor.service.template ./supervisor.service
    ```
 
    ```ini
@@ -370,43 +384,46 @@ While the Bash script in [Quick installation with uv](#quick-installation-with-u
 
    [Service]
    Type=simple
-   User=<USERNAME>
-   Environment="HOME=<HOME>"
-   WorkingDirectory="<SUPERVISOR>"
-   ExecStart=/bin/bash "<SUPERVISOR>/Startup_supervisord.sh"
-   Restart=on-failure
-   RestartSec=60s
+   ExecStart=<SUPERVISOR_DIR>/.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf
+   ExecStop=<SUPERVISOR_DIR>/.venv/bin/supervisorctl -c <SUPERVISOR_DIR>/supervisord.conf $OPTIONS shutdown
+   ExecReload=<SUPERVISOR_DIR>/.venv/bin/supervisorctl -c <SUPERVISOR_DIR>/supervisord.conf $OPTIONS reload
    KillMode=mixed
+   Restart=on-failure
+   RestartSec=50s
 
    [Install]
-   WantedBy=multi-user.target
+   WantedBy=default.target
    ```
 
-2. Replace placeholders `<USERNAME>` with user's account name (e.g., `imaq`), `<HOME>` with that the absolute path of the `$HOME` directory (e.g., `/home/imaq/`), and `<SUPERVISOR>` with the absolute path of this `supervisor` repo (e.g., /home/imaq/Projects/supervisor). The which can be found by running the below lines:
+2. Open `supervisor.service` and replace `<SUPERVISOR_DIR>` with the absolute path of this `supervisor` repo (e.g., `/home/imaq/Projects/supervisor`). The path can be found by running the line below from the repository folder:
 
    ```bash
-   id -un # <USERNAME>
-   echo $HOME # <HOME>
-   echo $PWD # <SUPERVISOR> (assuming the terminals in the `supervisor` folder)
+   echo "$PWD" # <SUPERVISOR_DIR>
    ```
 
+   Then link the file into the user service folder:
+
+   ```bash
+   mkdir -p "$HOME/.config/systemd/user/"
+   ln -sf "$PWD/supervisor.service" "$HOME/.config/systemd/user/supervisor.service"
+   ```
 
 3. Reload `systemd`, enable the service, and start it:
 
    ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable supervisor
-   sudo systemctl start supervisor
+   systemctl --user daemon-reload
+   systemctl --user enable supervisor
+   systemctl --user start supervisor
    ```
 
 4. Verify the service:
 
    ```bash
-   systemctl is-active supervisor
-   systemctl is-enabled supervisor
+   systemctl --user is-active supervisor
+   systemctl --user is-enabled supervisor
    ```
 
-Custom system-level unit files belong in `/etc/systemd/system/`. Files there override distribution-provided units with the same service name.
+Custom user unit files belong in `~/.config/systemd/user/`. Files there override administrator-provided user units with the same service name.
 
 ## Testing with the included child app
 
@@ -429,17 +446,17 @@ The GUI shown above should appear without a terminal window. Check `supervisor-t
 
 ## Uninstalling `supervisor`
 
-You may need to open a Bash terminal with `sudo` access for some of the steps below.
+Open a Bash terminal as the Linux user who runs `supervisord`.
 
 1. [Shut down the running `supervisor` instance](#shutdown-supervisor), if any.
 
 2. Delete the `supervisor` service created in `systemd` by running:
 
    ```bash
-   sudo systemctl disable supervisor
-   sudo rm -f /etc/systemd/system/supervisor.service
-   sudo systemctl daemon-reload
-   sudo systemctl reset-failed supervisor
+   systemctl --user reset-failed supervisor
+   systemctl --user disable supervisor
+   rm -f "$HOME/.config/systemd/user/supervisor.service"
+   systemctl --user daemon-reload
    ```
 
 3. Remove the `supervisor` project folder:
@@ -487,15 +504,15 @@ For another Linux distribution, use its package manager to remove the equivalent
 
 - The high-level flow of launching `supervisor` and registered apps:
 
-   > systemd -> Startup_supervisord.sh -> supervisord -> apps in conf.d/*.conf
+   > systemd user service -> supervisord -> apps in conf.d/*.conf
 
-- Why use a system-level `systemd` service to run `supervisord`?
+- Why use a user `systemd` service to run `supervisord`?
 
-   A system-level `systemd` service starts `supervisord` at boot while running it as the deployment user.
-   `Startup_supervisord.sh` uses `-n` to keep `supervisord` in the foreground so `systemd` can track and restart the process correctly.
+   A user `systemd` service starts `supervisord` when the deployment user logs in, without requiring root access.
+   The service uses `-n` to keep `supervisord` in the foreground so `systemd` can track and restart the process correctly.
 
 - Locations for user `systemd` service files: https://chatgpt.com/share/6a737907-87b8-83ea-b69c-a464201a316a
    - `~/.config/systemd/user/`: only for the user. System or other users does not access.
    - `/etc/systemd/user/`: any user can use it to run the local service. Managed by system (aka admin or root) as a system property.
    - `systemctl --user ...` is the command and options to control user services.
-   - `~/.config/systemd/user/` is searched first before `/etc/systemd/user/`, so the service in `/etc/systemd/user/` will override the service with the same name in `/etc/systemd/user/`.
+   - `~/.config/systemd/user/` is searched first before `/etc/systemd/user/`, so the service in `~/.config/systemd/user/` will override the service with the same name in `/etc/systemd/user/`.

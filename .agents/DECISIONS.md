@@ -11,7 +11,7 @@
 - The primary runtime since `2a0183b` is a user systemd service named `supervisor`, registered from root `supervisor.service.template` and controlled with `systemctl --user`.
 - The primary unit directly launches `.venv/bin/supervisord -n -c <SUPERVISOR_DIR>/supervisord.conf`. The materialized main config remains in the repository.
 - `mount-supervisord-systemd.sh` generates, registers, and enables `/etc/systemd/system/supervisor.service`, and starts it only when `--run-now` is explicitly passed. It does not install dependencies, create `supervisord.conf`, or edit credentials.
-- The README must retain an explicit manual systemd setup path in addition to the registration helper.
+- The README's quick, one-shot, and manual setup paths all register the same root user-service template under `~/.config/systemd/user/` with `WantedBy=default.target`. The retained system-level registration helper is not part of these paths and must not be silently repurposed.
 - The primary guide now symlinks `.venv/bin/supervisorctl` directly; the wrapper was removed in `2a0183b`. Keep long-term CLI/config-discovery choices separate from the child-test port and do not promise arbitrary-working-directory discovery.
 - Linux `supervisorctl` connects through a `0700` Unix socket at `%(here)s/supervisor.sock` without application-level credentials. The loopback `[inet_http_server]` remains separately authenticated for the Web UI.
 - Root main and app configs use relative paths and keep the Windows-side log rotation and restart policy unless Linux requires a documented difference.
