@@ -299,10 +299,8 @@ If this computer already has an old `supervisor` installed through a Linux packa
       ```ini
       [rpcinterface:multivisor]
       supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
-      bind=<TRUSTED_INTERFACE_IP>:9002
+      bind=*:9002
       ```
-
-      Replace `<TRUSTED_INTERFACE_IP>` with `127.0.0.1` for a Multivisor server on this computer, or a private IP reachable only from the trusted Multivisor server. This RPC endpoint has no authentication; do not expose it to an untrusted network.
 
       Restart `supervisor` daemon to load the new configuration.
 

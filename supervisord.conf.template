@@ -1,5 +1,8 @@
 ; supervisor config file.
 ; Refer to https://supervisord.org/configuration.html for detail
+; For the first test after installing supervisor, disable [rpcinterface:multivisor] block below (by commenting out with semicolons)
+; and uncomment it back after installing multivisor-rpc
+; (e.g., `sudo python -m pip install multivisor[rpc] if supervisor was installed via `sudo apt install supervisor`).
 
 [unix_http_server]                  ; local supervisorctl connection on Linux
 file=%(here)s/supervisor.sock       ; socket path relative to this config
@@ -41,9 +44,10 @@ history_file=%(here)s/.sc_history
 
 ; To interface this supervisor with multivisor
 ; https://github.com/tiagocoutinho/multivisor
+; uncomment to connect to multivisor
 ; [rpcinterface:multivisor]
 ; supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
-; bind=<TRUSTED_INTERFACE_IP>:9002
+; bind=*:9002                         ; (<LISTENING_IP>:<PORT>)
 
 ; The [include] section can contain the files setting. This setting can list
 ; multiple files separated by whitespace or newlines and can use wildcards.

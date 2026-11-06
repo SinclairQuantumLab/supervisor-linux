@@ -15,7 +15,7 @@
 - Linux `supervisorctl` connects through a `0700` Unix socket at `%(here)s/supervisor.sock` without application-level credentials. The loopback `[inet_http_server]` remains separately authenticated for the Web UI.
 - Root main and app configs use relative paths and keep the Windows-side log rotation and restart policy unless Linux requires a documented difference.
 - The systemd unit uses `KillMode=mixed` so supervisord receives the normal termination signal and can stop its children before systemd cleans up any processes left at timeout.
-- The optional Multivisor RPC interface must bind only to a trusted loopback or private interface and must not be exposed to an untrusted network.
+- Preserve the optional Multivisor example with `bind=*:9002` and the user-approved `(<LISTENING_IP>:<PORT>)` inline comment, as explicitly requested on 2026-11-06. Do not replace it with a restricted-interface placeholder unless the user requests that change.
 - Canonical Bash scripts are forced to LF line endings through `.gitattributes`.
 - Materialized configs, credentials, logs, PID/socket files, history, virtual environments, and caches are runtime state and remain untracked.
 - Use `C:\Users\Joon\Projects\supervisor` directly for Windows parity comparison and paired cross-repository edits. Do not keep a Windows checkout under this repository's `.agents/` directory.

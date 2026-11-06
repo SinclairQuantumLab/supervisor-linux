@@ -19,7 +19,7 @@
 6. On a Linux desktop, follow the child-test walkthrough: copy its config, update/start, observe one GUI and separate per-second logs, then remove the config and update again. Confirm Tk and the user service's desktop-display access first if startup fails.
 7. Verify the primary user service with `systemctl --user` and its direct foreground daemon command on Linux, including enablement under `default.target`, login autostart, stop/restart, and uninstall.
 8. Review plain CLI config discovery inside and outside the repository separately; do not restore the removed wrapper or redesign CLI usage during unrelated test work.
-9. Walk through the README commands from a clean `~/Projects/supervisor` checkout, including the manual systemd path, Web UI/CLI checks, trusted-interface Multivisor setup, and uninstall flow.
+9. Walk through the README commands from a clean `~/Projects/supervisor` checkout, including the manual systemd path, Web UI/CLI checks, optional Multivisor setup, and uninstall flow.
 10. Recheck parity-sensitive values and byte equality of `python/supervisor/supervisor_helper.py` against `C:\Users\Joon\Projects\supervisor`, applying paired edits there only when they are in scope.
 11. Update durable `.agents/*.md` state after validation. Use `.agents/*.local.md` only for machine-specific observations.
 12. Commit or push the parity work only when the user explicitly asks for it.

@@ -31,6 +31,6 @@
 - Keep Git status, staging, commits, and destructive operations separate between this repository and `C:\Users\Joon\Projects\supervisor`.
 - A materialized `supervisord.conf` contains credentials and must remain untracked.
 - The installation inconsistencies identified during the `f5d8ff4` review have been corrected: password substitution targets `supervisord.conf`, the unit uses `default.target`, and normal README flows use the user service and repository paths. The manual setup's missing copy command is filled in. Keep `sudo systemctl` and `/etc/supervisor` references limited to old package-manager removal; do not reintroduce the deleted CLI wrapper or the system-level setup helper into current instructions.
-- The optional Multivisor RPC endpoint is unauthenticated and must remain limited to a trusted loopback or private network path.
+- The optional Multivisor block remains commented out and uses `bind=*:9002` with the user-approved `(<LISTENING_IP>:<PORT>)` inline comment, matching the Windows block. The user explicitly reverted the restricted-interface placeholder on 2026-11-06; the README matches the restored example.
 - Windows-hosted static checks cannot replace validation of foreground process ownership, startup, restart, and shutdown under real Linux systemd.
 - The test requires Tk in the repository's Python and access to the desktop display from the user service. Windows-hosted GUI/logging/close checks passed on 2026-09-12; Linux desktop execution remains unverified.
