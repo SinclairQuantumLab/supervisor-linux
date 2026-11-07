@@ -1,8 +1,7 @@
-# configuration files
-*.conf
+# ignore all files in this folder
+/*
 
-# log files
-logs/*
-conf.d/logs/*
-*.log
-*.bak
+# except these files
+!.gitignore
+!logs
+![APPNAME].conf.template
